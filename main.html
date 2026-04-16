@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratório Itinerante: O Jogo</title>
+    <style>
+        :root {
+            --primary-color: #6a5acd;
+            --text-bg: rgba(0, 0, 0, 0.85);
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: var(--font-main);
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('background/bg_sala_aula.jpg'); 
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        #character-sprite {
+            position: absolute;
+            bottom: -40%;
+            height: 140%;
+            transition: all 0.5s ease;
+            z-index: 1;
+        }
+
+        #character-sprite.end-screen {
+            right: 5% !important;
+            bottom: -40% !important;
+            height: 140% !important;
+            right: 40% !important;
+            transform: none !important;
+        }
+
+        #dialogue-box {
+            position: relative;
+            width: 80%;
+            max-width: 900px;
+            height: 180px;
+            background: var(--text-bg);
+            border: 3px solid var(--primary-color);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            color: white;
+            z-index: 2;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        #speaker-name {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #6b9e1d;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        #dialogue-text {
+            font-size: 2rem;
+            line-height: 1.5;
+        }
+
+        #choice-container {
+            position: absolute;
+            top: 40%;
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 3;
+        }
+
+        .choice-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .choice-btn:hover {
+            transform: scale(1.05);
+            background: #6b9e1d;
+        }
+
+        .next-indicator {
+            position: absolute;
+            right: 20px;
+            bottom: 15px;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+
+        #end-message {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 60%;
+            transform: translate(-50%, -50%);
+            font-size: 10rem;
+            font-weight: bold;
+            text-align: center;
+            z-index: 10;
+            animation: gentleFlashColor 4s infinite ease-in-out;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        @keyframes gentleFlashColor {
+            0% { opacity: 0.1; color: #ff6b6b; }
+            25% { opacity: 1; color: #ffd93d; }
+            50% { opacity: 0.1; color: #6bcb77; }
+            75% { opacity: 1; color: #4d96ff; }
+            100% { opacity: 0.1; color: #ff6b6b; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <img id="character-sprite" src="" alt=""> 
+    <div id="choice-container"></div>
+    <div id="end-message">Obrigado pela atenção</div> <div id="dialogue-box" onclick="game.next()">
+        <div id="speaker-name"></div>
+        <div id="dialogue-text"></div>
+        <div class="next-indicator">Clique para continuar...</div>
+    </div>
+</div>
+
+<script>
+    const gameData = [
+        {
+            name: "Alex",
+            text: "Olá! Me chamo Alex e iremos conversar sobre a importância que é ter acesso à informação sobre saúde sexual!",
+            image: "characters/alex_feliz.png",
+        },
+        {
+            name: "Alex",
+            text: "Hoje vamos falar sobre como você pode aumentar sua autonomia e reduzir riscos de gravidez não planejada e ISTs.",
+            image: "characters/alex_neutro.png",
+        },
+        {
+            name: "Alex",
+            text: "Nesse quesito, o acesso livre à informação e à contracepção independe do seu gênero ou orientação sexual. Conhecer esses conceitos é de extrema importância!!!",
+            image: "characters/alex_feliz_left.png",
+        },
+        {
+            name: "Alex",
+            text: "Muitas pessoas usam o 'método da tabelinha' ou o 'coito interrompido' mas você sabe se realmente funcionam?",
+            image: "characters/alex_giz.png",
+            choices: [
+                { text: "Acho que são seguros.", nextScene: 4 },
+                { text: "A confiança é muito baixa.", nextScene: 5 }
+            ]
+        },
+        {
+            name: "Alex",
+            text: "Na verdade não é muito seguro. Métodos modernos como pílulas, injetáveis e implantes são muito mais eficazes!",
+            image: "characters/alex_mao_cabeça.png",
+            jumpTo: 6
+        },
+        {
+            name: "Alex",
+            text: "Exato! Você está bem informado. A confiança da tabelinha ou em interromper o ato na hora da ejaculação é muito baixa, até mesmo perigoso se comparado aos métodos modernos.",
+            image: "characters/alex_braço_aberto.png",
+        },
+        {
+            name: "Alex",
+            text: "E não esqueça: o uso correto do preservativo é recomendado sempre pois previne tanto gravidez quanto Infecções Sexualmente Transmissíveis.",
+            image: "characters/alex_feliz.png",
+        },
+        {
+            name: "Alex",
+            text: "Embora tenha uma taxa de segurança bem alta, pode não ser 100%... E se algo der errado? E se a camisinha estourar???",
+            image: "characters/alex_feliz_left.png",
+        },
+        {
+            name: "Alex",
+            text: "Em situações de emergência ou risco, existem recursos como a Anticoncepção de Emergência que é popularmente chamada de 'pílula do dia seguinte' e a PEP (Profilaxia Pós-Exposição)",
+            image: "characters/alex_feliz_left.png",
+        },
+        {
+            name: "Alex",
+            text: "Mas você sabe qual deles é o melhor??",
+            image: "characters/alex_giz.png",
+            choices: [
+                { text: "Anticoncepção de Emergência.", nextScene: 10 },
+                { text: "Profilaxia Pós-Exposição (PEP).", nextScene: 10 },
+                { text: "Cada um possui uma função diferente", nextScene: 11 }
+            ]
+        },
+        {
+            name: "Alex",
+            text: "Incorreto! A anticoncepção de emergência é para evitar a gravidez, enquanto o PEP é usado para previnir a infecção pelo vírus HIV. Cada um é usado por um motivo diferente.",
+            image: "characters/alex_mao_cabeça.png",
+            jumpTo: 12,
+        },
+        {
+            name: "Alex",
+            text: "Exatamente! Cada um tem a sua função e o acesso a eles é um direito seu! São recursos de saúde pública críticos que você deve conhecer e estão disponíveis no SUS!",
+            image: "characters/alex_feliz.png",
+        },
+        {
+            name: "Alex",
+            text: "E você acha que um adolescente pode buscar atendimento de saúde ou informação em algum posto sem estar acompanhado?",
+            image: "characters/alex_giz.png",
+            choices: [
+                { text: "Não, precisa sempre de um responsável.", nextScene: 13 },
+                { text: "Sim!", nextScene: 14 }
+            ]
+        },
+        {
+            name: "Alex",
+            text: "Muitos pensam isso, mas o direito à saúde garante autonomia e privacidade para buscar orientação técnica e proteção independente da idade do paciente!",
+            image: "characters/alex_mao_cabeça.png",
+            jumpTo: 15
+        },
+        {
+            name: "Alex",
+            text: "Exatamente! O acesso deve ser livre e garantido a TODOS, independentemente de gênero, sexualidade, etnia, estado civil, etc. É um direito garantido pela legislação!",
+            image: "characters/alex_braço_aberto.png",
+        },
+        {
+            name: "Alex",
+            text: "Lembre-se: ter informação é essencial para tomar decisões seguras. Exatamente por isso, é vital que as escolas abordem esse tema no inicio da puberdade ou até mesmo antes!",
+            image: "characters/alex_braço_aberto.png",
+        },
+        {
+            name: "Alex",
+            text: "Educação sexual é um questão séria de saúde pública e com a nossa saúde não devemos ficar reféns de tabus!",
+            image: "characters/alex_feliz_left.png",
+        },
+        {
+            name: "Alex",
+            text: "Ter um kit para auxiliar na comunicação sobre sexualidade pode ser de muita ajuda.",
+            image:"characters/alex_braço_aberto.png",
+        },
+        {
+            name: "Alex",
+            text: "Então, professor e até mesmo pais podem montar e guardar tudo em uma caixa de sapato para que abordar esse tema fique mais natural, como deve ser!",
+            image:"characters/alex_caixas.png",
+        }
+    ];
+
+    class VisualNovel {
+        constructor(data) {
+            this.data = data;
+            this.index = 0;
+            this.update();
+        }
+
+        update() {
+            const current = this.data[this.index];
+            document.getElementById('speaker-name').innerText = current.name;
+            document.getElementById('dialogue-text').innerText = current.text;
+            
+            const sprite = document.getElementById('character-sprite');
+            if (current.image) {
+                sprite.src = current.image;
+                sprite.style.display = "block";
+            } else {
+                sprite.style.display = "none";
+            }
+
+            const choiceContainer = document.getElementById('choice-container');
+            if (current.choices) {
+                choiceContainer.innerHTML = '';
+                choiceContainer.style.display = 'flex';
+                current.choices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.innerText = choice.text;
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        this.index = choice.nextScene;
+                        choiceContainer.style.display = 'none';
+                        this.update();
+                    };
+                    choiceContainer.appendChild(btn);
+                });
+            }
+        }
+
+        next() {
+            const current = this.data[this.index];
+            if (current.choices) return;
+
+            if (current.jumpTo !== undefined) {
+                this.index = current.jumpTo;
+            } else {
+                this.index++;
+            }
+
+            if (this.index < this.data.length) {
+                this.update();
+            } else {
+                this.triggerEndSequence();
+            }
+        }
+
+        triggerEndSequence() {
+            const container = document.getElementById('game-container');
+            container.style.backgroundImage = "url('background/bg_final.jpg')";
+
+            const sprite = document.getElementById('character-sprite');
+            sprite.classList.add('end-screen');
+            
+            document.getElementById('dialogue-box').style.display = 'none';
+            document.getElementById('end-message').style.display = 'block';
+
+            setTimeout(() => {
+                container.style.cursor = "pointer";
+                container.onclick = () => this.restart();
+            }, 100);
+        }
+
+        restart() {
+            const container = document.getElementById('game-container');
+            container.onclick = null;
+            container.style.cursor = "default";
+            container.style.backgroundImage = "url('background/bg_sala_aula.jpg')";
+
+            document.getElementById('character-sprite').classList.remove('end-screen');
+            document.getElementById('dialogue-box').style.display = 'block';
+            document.getElementById('end-message').style.display = 'none';
+
+            this.index = 0;
+            this.update();
+        }
+    }
+
+    const game = new VisualNovel(gameData);
+</script>
+
+</body>
+</html>
