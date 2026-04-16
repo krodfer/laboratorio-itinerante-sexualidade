@@ -7,7 +7,7 @@
     <style>
         :root {
             --primary-color: #6a5acd;
-            --text-bg: rgba(0, 0, 0, 0.85);
+            --text-bg: rgba(0, 0, 0, 0.9);
             --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
@@ -32,34 +32,35 @@
             flex-direction: column;
             justify-content: flex-end;
             align-items: center;
+            transition: background-image 0.8s ease;
         }
 
         #character-sprite {
             position: absolute;
-            bottom: -40%;
-            height: 140%;
+            bottom: -10%;
+            height: 90%;
             transition: all 0.5s ease;
             z-index: 1;
         }
 
         #character-sprite.end-screen {
-            right: 5% !important;
-            bottom: -40% !important;
-            height: 140% !important;
-            right: 40% !important;
-            transform: none !important;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: -10%;
+            height: 90%;
+            right: auto !important;
         }
 
         #dialogue-box {
             position: relative;
-            width: 80%;
+            width: 90%;
             max-width: 900px;
-            height: 180px;
+            min-height: 120px;
             background: var(--text-bg);
             border: 3px solid var(--primary-color);
             border-radius: 15px;
-            margin-bottom: 30px;
-            padding: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
             color: white;
             z-index: 2;
             cursor: pointer;
@@ -68,35 +69,37 @@
 
         #speaker-name {
             font-weight: bold;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: #6b9e1d;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             text-transform: uppercase;
         }
 
         #dialogue-text {
-            font-size: 2rem;
-            line-height: 1.5;
+            font-size: 1.3rem;
+            line-height: 1.4;
         }
 
         #choice-container {
             position: absolute;
-            top: 40%;
+            top: 30%;
             display: none;
             flex-direction: column;
-            gap: 15px;
+            gap: 10px;
             z-index: 3;
+            width: 85%;
+            max-width: 500px;
         }
 
         .choice-btn {
             background: var(--primary-color);
             color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
+            padding: 12px 20px;
+            border-radius: 20px;
             cursor: pointer;
             font-size: 1rem;
             transition: transform 0.2s;
+            text-align: center;
         }
 
         .choice-btn:hover {
@@ -104,38 +107,46 @@
             background: #6b9e1d;
         }
 
-        .next-indicator {
-            position: absolute;
-            right: 20px;
-            bottom: 15px;
-            font-size: 0.8rem;
-            opacity: 0.7;
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
-
         #end-message {
             display: none;
             position: absolute;
-            top: 50%;
-            left: 60%;
+            top: 40%;
+            left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 10rem;
+            font-size: 3.5rem;
             font-weight: bold;
             text-align: center;
             z-index: 10;
+            width: 90%;
             animation: gentleFlashColor 4s infinite ease-in-out;
             text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
             pointer-events: none;
         }
 
+        @media (min-width: 769px) {
+            #character-sprite { height: 140%; bottom: -40%; }
+            #character-sprite.end-screen { left: 40%; height: 140%; bottom: -40%; }
+            #dialogue-text { font-size: 1.8rem; }
+            #end-message { font-size: 8rem; left: 60%; }
+            #dialogue-box { height: 180px; }
+        }
+
+        @keyframes blink { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
         @keyframes gentleFlashColor {
             0% { opacity: 0.1; color: #ff6b6b; }
             25% { opacity: 1; color: #ffd93d; }
             50% { opacity: 0.1; color: #6bcb77; }
             75% { opacity: 1; color: #4d96ff; }
             100% { opacity: 0.1; color: #ff6b6b; }
+        }
+
+        .next-indicator {
+            position: absolute;
+            right: 15px;
+            bottom: 10px;
+            font-size: 0.7rem;
+            opacity: 0.7;
+            animation: blink 1s infinite;
         }
     </style>
 </head>
@@ -144,7 +155,9 @@
 <div id="game-container">
     <img id="character-sprite" src="" alt=""> 
     <div id="choice-container"></div>
-    <div id="end-message">Obrigado pela atenção</div> <div id="dialogue-box" onclick="game.next()">
+    <div id="end-message">Obrigado pela atenção</div> 
+    
+    <div id="dialogue-box" onclick="game.next()">
         <div id="speaker-name"></div>
         <div id="dialogue-text"></div>
         <div class="next-indicator">Clique para continuar...</div>
@@ -282,24 +295,17 @@
             if (current.image) {
                 sprite.src = current.image;
                 sprite.style.display = "block";
-            } else {
-                sprite.style.display = "none";
             }
-
+            
             const choiceContainer = document.getElementById('choice-container');
+            choiceContainer.style.display = current.choices ? 'flex' : 'none';
             if (current.choices) {
                 choiceContainer.innerHTML = '';
-                choiceContainer.style.display = 'flex';
                 current.choices.forEach(choice => {
                     const btn = document.createElement('button');
                     btn.className = 'choice-btn';
                     btn.innerText = choice.text;
-                    btn.onclick = (e) => {
-                        e.stopPropagation();
-                        this.index = choice.nextScene;
-                        choiceContainer.style.display = 'none';
-                        this.update();
-                    };
+                    btn.onclick = (e) => { e.stopPropagation(); this.index = choice.nextScene; this.update(); };
                     choiceContainer.appendChild(btn);
                 });
             }
@@ -308,27 +314,17 @@
         next() {
             const current = this.data[this.index];
             if (current.choices) return;
+            if (current.jumpTo !== undefined) this.index = current.jumpTo;
+            else this.index++;
 
-            if (current.jumpTo !== undefined) {
-                this.index = current.jumpTo;
-            } else {
-                this.index++;
-            }
-
-            if (this.index < this.data.length) {
-                this.update();
-            } else {
-                this.triggerEndSequence();
-            }
+            if (this.index < this.data.length) this.update();
+            else this.triggerEndSequence();
         }
 
         triggerEndSequence() {
             const container = document.getElementById('game-container');
             container.style.backgroundImage = "url('background/bg_final.jpg')";
-
-            const sprite = document.getElementById('character-sprite');
-            sprite.classList.add('end-screen');
-            
+            document.getElementById('character-sprite').classList.add('end-screen');
             document.getElementById('dialogue-box').style.display = 'none';
             document.getElementById('end-message').style.display = 'block';
 
@@ -343,11 +339,9 @@
             container.onclick = null;
             container.style.cursor = "default";
             container.style.backgroundImage = "url('background/bg_sala_aula.jpg')";
-
             document.getElementById('character-sprite').classList.remove('end-screen');
             document.getElementById('dialogue-box').style.display = 'block';
             document.getElementById('end-message').style.display = 'none';
-
             this.index = 0;
             this.update();
         }
@@ -355,6 +349,5 @@
 
     const game = new VisualNovel(gameData);
 </script>
-
 </body>
 </html>
